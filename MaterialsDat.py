@@ -116,15 +116,16 @@ Stiffness = []
 for i, val in enumerate(minima):
     try:
         tmpForce = FilteredForceDat[minima[i]:stops[i]]
-        tmpFDDat = filteredDatDisp[minima[i]:stops[i]]
+        tmpDispDat = filteredDatDisp[minima[i]:stops[i]]
+        tmpFDDat = FilteredForceDispDat[minima[i]:stops[i]]
         tmpMax = np.argmax(tmpForce)
-        tmpMaxFP = np.argmax(tmpFDDat)
+        tmpMaxFP = np.argmax(tmpDispDat)
         tmp25 = round(0.25*tmpMaxFP)
         tmp75 = round(0.75*tmpMaxFP)
         
         # integration
-        rampup = integrate.trapz(tmpForce[0:tmpMax],tmpFDDat[0:tmpMax])
-        rampdown = -1 * integrate.trapz(tmpForce[tmpMax:-1],tmpFDDat[tmpMax:-1])
+        rampup = integrate.trapz(tmpForce[0:tmpMax],tmpDispDat[0:tmpMax])
+        rampdown = -1 * integrate.trapz(tmpForce[tmpMax:-1],tmpDispDat[tmpMax:-1])
 
         EnergyLoss = rampup - rampdown
         PercentReturn.append( ( 1-(EnergyLoss/rampup))*100 )
