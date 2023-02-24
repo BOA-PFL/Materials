@@ -20,7 +20,7 @@ from tkinter import messagebox
 filename = askopenfilename()
 dat = pd.read_csv(filename, sep=';', header = 0, skiprows=[1])
 dat.Force = dat.Force*1000
-check_data = 0
+check_data = 1
 
 #cycle = dat.loc[dat["Cycle number"]==40]
 
@@ -86,13 +86,21 @@ if stops[0] < minima[0]:
 
 
 if check_data == 1:
-    fig, ax = plt.subplots(1,1)
-    ax.plot(FilteredForceDat)
-    ax.vlines(x = minima, ymin = 0, ymax = 40,
-            color = 'blue', label = 'start',linewidth=3.0, ls='--')
-    ax.vlines(x = stops, ymin = 0, ymax = 40,
-            color = 'coral', label = 'stops',linewidth=3.0, ls='--')
-    ax.legend()
+    fig,ax = plt.subplots(1,1)    
+    for i,val in enumerate(minima):
+        if i == len(minima)-1:
+            #ax.text(0.5,0,txt,transform=fig.transFigure)
+            ax.text(1.5,35,'Up', fontsize = 12,color = 'blue')
+            ax.text(1.5,30,'Down', fontsize = 12, color = 'orange')
+        else:
+            start = minima[i] 
+            mid = minima[i] + round((stops[i] - minima[i]) / 2)
+            end = stops[i]
+            
+            ax.plot(filteredDatDisp[start:mid],FilteredForceDat[start:mid], color = 'blue',label = 'up')
+            ax.plot(filteredDatDisp[mid:end],FilteredForceDat[mid:end], color = 'orange',label='down')
+ 
+    
     answer = messagebox.askyesno("Question","Is data clean?")
     badFileList = []
     
@@ -137,12 +145,3 @@ outcomes = pd.DataFrame({'PercentReturn':list(PercentReturn),'Stiffness': list(S
 
 
 
-# fig,ax = plt.subplots(1,1)
-# for i,val in enumerate(minima):
-    
-#     start = minima[i] 
-#     mid = minima[i] + round((stops[i] - minima[i]) / 2)
-#     end = stops[i]
-    
-#     ax.plot(filteredDatDisp[start:mid],FilteredForceDat[start:mid], color = 'blue',label = 'up')
-#     ax.plot(filteredDatDisp[mid:end],FilteredForceDat[mid:end], color = 'orange',label='down')
