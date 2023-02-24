@@ -24,7 +24,7 @@ check_data = 1
 
 #cycle = dat.loc[dat["Cycle number"]==40]
 
-fr = 1000 #Hertz
+fr = 500 #Hertz
 #yf = fft(dat.Displacement)
 
 #xf = fftfreq(501, 1/fr)
