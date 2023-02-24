@@ -14,6 +14,7 @@ from matplotlib import pyplot as plt
 from scipy.fft import fft, fftfreq
 from scipy.signal import butter,filtfilt
 import scipy.signal as sig
+from scipy import integrate
 from tkinter import messagebox
 
 filename = askopenfilename()
@@ -121,8 +122,10 @@ for i, val in enumerate(minima):
         tmp25 = round(0.25*tmpMaxFP)
         tmp75 = round(0.75*tmpMaxFP)
         
-        rampup = sum(tmpFDDat[0:tmpMax]) 
-        rampdown = sum(tmpFDDat[tmpMax:stops[i]])
+        # integration
+        rampup = integrate.trapz(tmpForce[0:tmpMax],tmpFDDat[0:tmpMax])
+        rampdown = -1 * integrate.trapz(tmpForce[tmpMax:-1],tmpFDDat[tmpMax:-1])
+
         EnergyLoss = rampup - rampdown
         PercentReturn.append( ( 1-(EnergyLoss/rampup))*100 )
         Stiffness.append( tmpFDDat[tmp75] - tmpFDDat[tmp25]  )
@@ -132,12 +135,13 @@ for i, val in enumerate(minima):
 outcomes = pd.DataFrame({'PercentReturn':list(PercentReturn),'Stiffness': list(Stiffness)})
 
 
+
+# fig,ax = plt.subplots(1,1)
 # for i,val in enumerate(minima):
     
 #     start = minima[i] 
 #     mid = minima[i] + round((stops[i] - minima[i]) / 2)
 #     end = stops[i]
     
-#     plt.plot(FilteredForceDat[start:mid],filteredDatDisp[start:mid], color = 'blue',label = 'up')
-#     plt.plot(FilteredForceDat[mid:end],filteredDatDisp[mid:end], color = 'orange',label='down')
-#     plt.legend()
+#     ax.plot(filteredDatDisp[start:mid],FilteredForceDat[start:mid], color = 'blue',label = 'up')
+#     ax.plot(filteredDatDisp[mid:end],FilteredForceDat[mid:end], color = 'orange',label='down')
