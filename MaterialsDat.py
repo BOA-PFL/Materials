@@ -27,6 +27,19 @@ save_on = 1
 outfileName = fPath + 'testResults.csv'
 badFileList = []
 
+fr = 500 #Hertz
+
+order = 2
+cutoff = 20
+nyq = 0.5 * fr
+
+def butter_lowpass_filter(data, cutoffVal, fs, order):
+    normal_cutoff = cutoffVal / nyq
+    # Get the filter coefficients 
+    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    y = filtfilt(b, a, data)
+    return y
+
 for entry in entries:
 
 
@@ -36,19 +49,7 @@ for entry in entries:
         dat = pd.read_csv(fPath + entry, sep=';', header = 0, skiprows=[1])
         dat.Force = dat.Force*1000
         
-        fr = 500 #Hertz
-        
-        order = 2
-        cutoff = 20
-        nyq = 0.5 * fr
-        
-        def butter_lowpass_filter(data, cutoffVal, fs, order):
-            normal_cutoff = cutoffVal / nyq
-            # Get the filter coefficients 
-            b, a = butter(order, normal_cutoff, btype='low', analog=False)
-            y = filtfilt(b, a, data)
-            return y
-        
+       
         normal_cutoff = cutoff/nyq
         b, a = butter(order, normal_cutoff, btype='low', analog=False)
         
