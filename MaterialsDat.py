@@ -23,7 +23,7 @@ fPath = 'C:\\Users\\daniel.feeney\\Boa Technology Inc\\PFL Team - General\\Mater
 fileExt = r".csv"
 entries = [fName for fName in os.listdir(fPath) if fName.endswith(fileExt)]
 check_data = 1
-save_on = 1
+save_on = 0
 outfileName = fPath + 'testResults.csv'
 badFileList = []
 
@@ -99,21 +99,26 @@ for entry in entries:
             if check_data == 1:
                 fig,ax = plt.subplots(1,1)    
                 for i,val in enumerate(minima):
-                    if i == len(minima)-1:
-                        #ax.text(0.5,0,txt,transform=fig.transFigure)
-                        ax.text(1.5,35,'Up', fontsize = 12,color = 'blue')
-                        ax.text(1.5,30,'Down', fontsize = 12, color = 'orange')
-                    else:
-                        start = minima[i] 
-                        mid = minima[i] + round((stops[i] - minima[i]) / 2)
-                        end = stops[i]
+                    try:
+                        if i == len(minima)-1:
+                            #ax.text(0.5,0,txt,transform=fig.transFigure)
+                            ax.text(1.5,35,'Up', fontsize = 12,color = 'blue')
+                            ax.text(1.5,30,'Down', fontsize = 12, color = 'orange')
+                        else:
+                            start = minima[i] 
+                            mid = minima[i] + round((stops[i] - minima[i]) / 2)
+                            end = stops[i]
+                            
+                            ax.plot(filteredDatDisp[start:mid],FilteredForceDat[start:mid], color = 'blue',label = 'up')
+                            ax.plot(filteredDatDisp[mid:end],FilteredForceDat[mid:end], color = 'orange',label='down')
+                    
+                    except Exception as e: 
+                        print(e)
+                        answer = False
+                        badFileList.append(entry)
                         
-                        ax.plot(filteredDatDisp[start:mid],FilteredForceDat[start:mid], color = 'blue',label = 'up')
-                        ax.plot(filteredDatDisp[mid:end],FilteredForceDat[mid:end], color = 'orange',label='down')
-             
-                
                 answer = messagebox.askyesno("Question","Is data clean?")
-                badFileList = []
+            
                 
                 if answer == False:
                     plt.close('all')
