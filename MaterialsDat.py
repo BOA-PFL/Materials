@@ -94,6 +94,8 @@ for entry in entries:
             # if first element of stops is 'before' first of minima, delete first of stops
             if stops[0] < minima[0]:
                 stops.pop(0)
+            if minima[-1] > stops[-1]:
+                minima.pop(-1)
             
             
             if check_data == 1:
