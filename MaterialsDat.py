@@ -23,7 +23,7 @@ fPath = 'C:\\Users\\daniel.feeney\\Boa Technology Inc\\PFL Team - General\\Mater
 fileExt = r".csv"
 entries = [fName for fName in os.listdir(fPath) if fName.endswith(fileExt)]
 check_data = 1
-save_on = 0
+save_on = 1
 outfileName = fPath + 'testResults.csv'
 badFileList = []
 
