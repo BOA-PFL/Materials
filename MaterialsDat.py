@@ -71,7 +71,6 @@ for entry in entries:
         adaptiveThresh = pks[np.where((pks > 10) & (pks < 12))].mean() 
         padding = 0.5
         FilteredForceDat[FilteredForceDat < adaptiveThresh + padding] = adaptiveThresh
-        #plt.plot(FilteredForceDat[5000:6000])
         
         minima = []
         stops = []
