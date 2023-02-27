@@ -29,7 +29,9 @@ badFileList = []
 
 for entry in entries:
 
+
     if entry.split(' ')[0].split('_')[-1] == 'Channels':
+
         
         dat = pd.read_csv(fPath + entry, sep=';', header = 0, skiprows=[1])
         dat.Force = dat.Force*1000
