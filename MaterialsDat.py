@@ -116,8 +116,6 @@ for entry in entries:
                     
                     except Exception as e: 
                         print(e)
-                        answer = False
-                        badFileList.append(entry)
                         
                 answer = messagebox.askyesno("Question","Is data clean?")
             
