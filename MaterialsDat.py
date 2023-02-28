@@ -189,7 +189,11 @@ for i in range(100):
         # find the local minima, filter out peaks below 10 and above 12 to find mean peak value
         # find an appropriate threshold value 
         pks = np.array(FilteredForceDat[locs])
+<<<<<<< Updated upstream
         adaptiveThresh = pks[np.where((pks > 7) & (pks < 16))].mean() 
+=======
+        adaptiveThresh = pks[np.where((pks > 8) & (pks < 15))].mean() 
+>>>>>>> Stashed changes
         padding = 0.5
         FilteredForceDat[FilteredForceDat < adaptiveThresh + padding] = adaptiveThresh
         #plt.plot(FilteredForceDat[5000:6000])
@@ -210,7 +214,7 @@ for i in range(100):
             print('No minima detected, adding to badFileList; check file '+entry)
             badFileList.append(entry)
         else:
-            n = 70
+            n = 85
             del minima[:n]
             del stops[:n]
             # if first element of stops is 'before' first of minima, delete first of stops
