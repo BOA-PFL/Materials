@@ -19,7 +19,7 @@ from scipy import integrate
 from tkinter import messagebox
 
 #filename = askopenfilename()
-fPath = 'C:\\Users\\daniel.feeney\\Boa Technology Inc\\PFL Team - General\\Materials Testing\\Swatch Creation\\'
+fPath = 'C:\\Users\\adam.luftglass\\OneDrive - Boa Technology Inc\\General\\Materials Testing\\Swatch Creation\\'
 fileExt = r".csv"
 entries = [fName for fName in os.listdir(fPath) if fName.endswith(fileExt)]
 check_data = 1
@@ -42,7 +42,7 @@ def butter_lowpass_filter(data, cutoffVal, fs, order):
 
 for entry in entries:
 
-
+    #entry = entries[12]
     if entry.split(' ')[0].split('_')[-1] == 'Channels':
 
         
@@ -68,8 +68,8 @@ for entry in entries:
         # find the local minima, filter out peaks below 10 and above 12 to find mean peak value
         # find an appropriate threshold value 
         pks = np.array(FilteredForceDat[locs])
-        adaptiveThresh = pks[np.where((pks > 10) & (pks < 12))].mean() 
-        padding = 0.5
+        adaptiveThresh = pks[np.where((pks > 8) & (pks < 15))].mean() 
+        padding = 0.8
         FilteredForceDat[FilteredForceDat < adaptiveThresh + padding] = adaptiveThresh
         
         minima = []
@@ -88,20 +88,28 @@ for entry in entries:
             print('No minima detected, adding to badFileList; check file '+entry)
             badFileList.append(entry)
         else:
-            n = 70
+            n = 110
             del minima[:n]
             del stops[:n]
             # if first element of stops is 'before' first of minima, delete first of stops
-            if stops[0] < minima[0]:
-                stops.pop(0)
-            if minima[-1] > stops[-1]:
-                minima.pop(-1)
-            
-            
+            try:
+                
+                if stops[0] < minima[0]:
+                    stops.pop(0)
+                if minima[-1] > stops[-1]:
+                    minima.pop(-1)
+                
+            except  Exception as e: 
+                 print(e)
+                 answer = False
+                 badFileList.append(entry)
+                 
+                 
             if check_data == 1:
                 fig,ax = plt.subplots(1,1)    
                 for i,val in enumerate(minima):
                     try:
+                      
                         if i == len(minima)-1:
                             #ax.text(0.5,0,txt,transform=fig.transFigure)
                             ax.text(1.5,35,'Up', fontsize = 12,color = 'blue')
@@ -116,7 +124,8 @@ for entry in entries:
                     
                     except Exception as e: 
                         print(e)
-                        
+                        answer = False
+                        badFileList.append(entry)
                 answer = messagebox.askyesno("Question","Is data clean?")
             
                 
@@ -139,6 +148,7 @@ for entry in entries:
             
             for i, val in enumerate(minima):
                 try:
+                    
                     tmpForce = FilteredForceDat[minima[i]:stops[i]]
                     tmpDispDat = filteredDatDisp[minima[i]:stops[i]]
                     tmpFDDat = FilteredForceDispDat[minima[i]:stops[i]]
