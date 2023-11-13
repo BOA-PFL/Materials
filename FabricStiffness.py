@@ -25,7 +25,7 @@ from scipy.signal import butter,filtfilt
 
 
 #filename = askopenfilename()
-fPath = 'C:\\Users\\adam.luftglass\\OneDrive - Boa Technology Inc\\General\\Materials Testing\\Swatch Creation\\fabric stiffness\\'
+fPath = 'C:\\Users\\adam.luftglass\\OneDrive - Boa Technology Inc\\General\\Materials Testing\\Fabric Stiffness\\117\\'
 fileExt = r".csv"
 entries = [fName for fName in os.listdir(fPath) if fName.endswith(fileExt)]
 

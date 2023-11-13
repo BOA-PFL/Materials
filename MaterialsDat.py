@@ -1,3 +1,5 @@
+
+
 # -*- coding: utf-8 -*-
 """
 Created on Thu Feb 16 13:56:32 2023
@@ -19,9 +21,11 @@ from scipy import integrate
 from tkinter import messagebox
 
 #filename = askopenfilename()
-fPath = 'C:\\Users\\adam.luftglass\\OneDrive - Boa Technology Inc\\General\\Materials Testing\\Swatch Creation\\'
+fPath = 'C:\\Users\\adam.luftglass\\OneDrive - Boa Technology Inc\\General\\Materials Testing\\Swatch Creation\\117\\'
 fileExt = r".csv"
 entries = [fName for fName in os.listdir(fPath) if fName.endswith(fileExt)]
+
+
 check_data = 1
 save_on = 1
 outfileName = fPath + 'testResults.csv'
@@ -33,12 +37,14 @@ order = 2
 cutoff = 20
 nyq = 0.5 * fr
 
+
 def butter_lowpass_filter(data, cutoffVal, fs, order):
     normal_cutoff = cutoffVal / nyq
     # Get the filter coefficients 
     b, a = butter(order, normal_cutoff, btype='low', analog=False)
     y = filtfilt(b, a, data)
     return y
+
 
 for entry in entries:
 
@@ -144,6 +150,7 @@ for entry in entries:
             EnergyLoss = []
             PercentReturn = []
             Stiffness = []
+            stiff = []
             
             
             for i, val in enumerate(minima):
@@ -152,10 +159,21 @@ for entry in entries:
                     tmpForce = FilteredForceDat[minima[i]:stops[i]]
                     tmpDispDat = filteredDatDisp[minima[i]:stops[i]]
                     tmpFDDat = FilteredForceDispDat[minima[i]:stops[i]]
+                    
                     tmpMax = np.argmax(tmpForce)
                     tmpMaxFP = np.argmax(tmpDispDat)
-                    tmp25 = round(0.25*tmpMaxFP)
-                    tmp75 = round(0.75*tmpMaxFP)
+                    tmp20 = round(0.2*tmpMaxFP)
+                    tmp40 = round(0.4*tmpMaxFP)
+                    
+                    tmp60 = round(0.6*tmpMaxFP)
+                    
+                    tmpForceRange = tmpForce[tmp20:tmp60]
+                    tmpDispRange = tmpDispDat[tmp20:tmp60]
+                    
+                    stiff = np.gradient(tmpForceRange, tmpDispRange)
+                    #Add a average slope between 20 and 80% of 
+                    
+                    #stiff = np.diff(tmpForce, axis = tmpDispDat, prepend = tmpForce[tmp20], append = tmpForce[tmp80])
                     
                     # integration
                     rampup = integrate.trapz(tmpForce[0:tmpMax],tmpDispDat[0:tmpMax])
@@ -163,19 +181,21 @@ for entry in entries:
             
                     EnergyLoss = rampup - rampdown
                     PercentReturn.append( ( 1-(EnergyLoss/rampup))*100 )
-                    Stiffness.append( tmpFDDat[tmp75] - tmpFDDat[tmp25]  )
+                    Stiffness.append(( tmpForce[tmp40] - tmpForce[tmp20]) /(tmpDispDat[tmp40]-tmpDispDat[tmp20]) )
+
+                    plt.plot(FilteredForceDat[tmp20:tmp60])
                 
                 except Exception as e: print(e)
                 
-    
-            arrayValues = [[int(entry.split('_')[1]),np.mean(PercentReturn), np.mean(Stiffness)]]
-            col_vals = ['SpecimenNumber','PercentReturn', 'Stiffness']
+           
+            arrayValues = [[int(entry.split('_')[1]),np.mean(PercentReturn), np.mean(Stiffness), np.mean(stiff)]]
+            col_vals = ['SpecimenNumber','PercentReturn', 'Stiffness OG', 'Stiffness New']
             
             outcomes = pd.DataFrame(
                 data = arrayValues,
                 columns = col_vals)
             
-    
+            
             if save_on == 1:
                 if os.path.exists(outfileName) == False:
                     
