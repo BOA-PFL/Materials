@@ -8,35 +8,29 @@ Analyzing stretch testing results from Zwick Roell. File contains cycles of
 stretch testing providing force and displacement of the data
 
 """
-import os
+
+
 import pandas as pd
+import os
+from tkinter.filedialog import askopenfilename
 import numpy as np
+from matplotlib import pyplot as plt
+from scipy.fft import fft, fftfreq
+from scipy.signal import butter, filtfilt
 import scipy.signal as sig
 from scipy import integrate
-import matplotlib.pyplot as plt
-from scipy.signal import butter, filtfilt
-from tkinter import messagebox, Tk, simpledialog
-
-# Initialize Tkinter root window (hide it)
-root = Tk()
-root.withdraw()  # Hides the root window as we only need the dialog
-
-# Ask the user to input the desired output file name using a dialog box
-outfileName = simpledialog.askstring("Input", "Please enter the desired output file name (without extension):")
-if not outfileName:
-    print("No filename entered. Exiting...")
-    exit()
-outfileName += '.csv'
+from tkinter import messagebox
 
 # Path to the directory containing the CSV files
-fPath = 'C:\\Users\\adam.luftglass\\OneDrive - BOA Technology Inc\\General\\Materials Testing\\Swatch Creation\\2525instep\\'
-outfilePath = os.path.join(fPath, outfileName)  # Combine path and file name
+fPath = 'C:\\Users\\adam.luftglass\\OneDrive - Boa Technology Inc\\General\\Materials Testing\\Swatch Creation\\92624\\'
 fileExt = r".csv"  # File extension of the target files
 entries = [fName for fName in os.listdir(fPath) if fName.endswith(fileExt)]  # List of CSV files in the directory
 
-check_data = 1  # Flag to check the data
+check_data =0  # Flag to check the data
 save_on = 1  # Flag to save the results
+outfileName = fPath + 'testResults.csv'  # Output file name for results
 badFileList = []  # List to track files with issues
+
 fr = 500  # Sampling frequency in Hertz
 
 order = 2  # Order of the filter
@@ -54,19 +48,18 @@ def butter_lowpass_filter(data, cutoffVal, fs, order):
 
 # Process each file in the entries list
 for entry in entries:
-    #entry = entries[1]
+    #entry = entries[2]
     if entry.split(' ')[0].split('_')[-1] == 'Channels':
         # Read the CSV file
         dat = pd.read_csv(fPath + entry, sep=';', header=0, skiprows=[1])
-        
         dat.Force = dat.Force * 1000  # Convert force to correct units
 
         normal_cutoff = cutoff / nyq
         b, a = butter(order, normal_cutoff, btype='low', analog=False)
 
         # Extract force and displacement data
-        ForceDat = dat.Force 
-        DispDat = dat.Displacement 
+        ForceDat = dat.Force
+        DispDat = dat.Displacement
         ForceDisp = ForceDat / DispDat
 
         # Apply low-pass filter to the data
@@ -77,7 +70,7 @@ for entry in entries:
         # Identify local minima in the force data
         locs, _ = sig.find_peaks(-1 * FilteredForceDat, distance=200)
         pks = np.array(FilteredForceDat[locs])
-        adaptiveThresh = pks[np.where((pks > 8) & (pks < 14))].mean()
+        adaptiveThresh = pks[np.where((pks > 4) & (pks < 10))].mean()
         padding = 0.8
         FilteredForceDat[FilteredForceDat < adaptiveThresh + padding] = adaptiveThresh
 
@@ -91,13 +84,14 @@ for entry in entries:
             elif (val == adaptiveThresh) & (FilteredForceDat[i - 1] > adaptiveThresh):
                 stops.append(i)
 
+        # Handle files with no detected minima
         if len(minima) == 0:
             print('No minima detected, adding to badFileList; check file ' + entry)
             badFileList.append(entry)
         else:
-            n = 20
-            #del minima[:n]
-            #del stops[:n]
+            n = 110
+            del minima[:n]
+            del stops[:n]
             try:
                 if stops[0] < minima[0]:
                     stops.pop(0)
@@ -135,7 +129,7 @@ for entry in entries:
 
                 if answer == True:
                     plt.close('all')
-                    print('Calculating Stiffness and Energy Return')
+                    print('Estimating point estimates')
             else:
                 answer = True
 
@@ -144,53 +138,46 @@ for entry in entries:
             Stiffness = []
             stiff = []
 
-            # Filter cycles between 100 and 175
-            filtered_minima = minima[100:176]  # Ensure inclusivity
-            filtered_stops = stops[100:176]
-            
-            # Check for mismatched start-stop lists after filtering
-            if len(filtered_minima) != len(filtered_stops):
-                print("Warning: Mismatched filtered minima and stops lengths.")
-            
-            # Iterate over the filtered cycles for calculations
-            for i, val in enumerate(filtered_minima):
+            # Calculate energy loss, percent return, and stiffness for each cycle
+            for i, val in enumerate(minima):
                 try:
-                    tmpForce = FilteredForceDat[filtered_minima[i]:filtered_stops[i]]
-                    tmpDispDat = filteredDatDisp[filtered_minima[i]:filtered_stops[i]]
-                    tmpFDDat = FilteredForceDispDat[filtered_minima[i]:filtered_stops[i]]
-            
+                    tmpForce = FilteredForceDat[minima[i]:stops[i]]
+                    tmpDispDat = filteredDatDisp[minima[i]:stops[i]]
+                    tmpFDDat = FilteredForceDispDat[minima[i]:stops[i]]
+
                     tmpMax = np.argmax(tmpForce)
                     tmpMaxFP = np.argmax(tmpDispDat)
                     tmp20 = round(0.2 * tmpMaxFP)
                     tmp40 = round(0.4 * tmpMaxFP)
                     tmp60 = round(0.6 * tmpMaxFP)
-            
+
                     tmpForceRange = tmpForce[tmp20:tmp60]
                     tmpDispRange = tmpDispDat[tmp20:tmp60]
-            
+
                     stiff = np.gradient(tmpForceRange, tmpDispRange)
-            
-                    rampup = np.trapz(tmpForce[0:tmpMax], tmpDispDat[0:tmpMax])
-                    rampdown = -1 * np.trapz(tmpForce[tmpMax:-1], tmpDispDat[tmpMax:-1])
-            
+
+                    rampup = integrate.trapz(tmpForce[0:tmpMax], tmpDispDat[0:tmpMax])
+                    rampdown = -1 * integrate.trapz(tmpForce[tmpMax:-1], tmpDispDat[tmpMax:-1])
+
                     EnergyLoss = rampup - rampdown
                     PercentReturn.append((1 - (EnergyLoss / rampup)) * 100)
                     Stiffness.append((tmpForce[tmp40] - tmpForce[tmp20]) / (tmpDispDat[tmp40] - tmpDispDat[tmp20]))
-            
+
+                    plt.plot(FilteredForceDat[tmp20:tmp60])
                 except Exception as e:
                     print(e)
 
-
-            arrayValues = [[int(entry.split('_')[1]), np.mean(PercentReturn), np.mean(stiff)]]
-            col_vals = ['SpecimenNumber', 'PercentReturn', 'Stiffness']
+            # Prepare results for saving
+            arrayValues = [[int(entry.split('_')[1]), np.mean(PercentReturn), np.mean(Stiffness), np.mean(stiff)]]
+            col_vals = ['SpecimenNumber', 'PercentReturn', 'Stiffness OG', 'Stiffness New']
 
             outcomes = pd.DataFrame(
                 data=arrayValues,
                 columns=col_vals)
 
+            # Save results to the output file
             if save_on == 1:
-                if not os.path.exists(outfilePath):
-                    outcomes.to_csv(outfilePath, mode='a', header=True, index=False)
+                if os.path.exists(outfileName) == False:
+                    outcomes.to_csv(outfileName, mode='a', header=True, index=False)
                 else:
-                    outcomes.to_csv(outfilePath, mode='a', header=False, index=False)
-
+                    outcomes.to_csv(outfileName, mode='a', header=False, index=False)

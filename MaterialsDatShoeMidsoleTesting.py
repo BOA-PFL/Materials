@@ -29,7 +29,7 @@ if not outfileName:
 outfileName += '.csv'
 
 # Path to the directory containing the CSV files
-fPath = 'C:\\Users\\adam.luftglass\\OneDrive - BOA Technology Inc\\General\\Materials Testing\\Swatch Creation\\2525instep\\'
+fPath = 'C:\\Users\\adam.luftglass\\OneDrive - BOA Technology Inc\\General\\Materials Testing\\alphaflyspeedlandtesting\\'
 outfilePath = os.path.join(fPath, outfileName)  # Combine path and file name
 fileExt = r".csv"  # File extension of the target files
 entries = [fName for fName in os.listdir(fPath) if fName.endswith(fileExt)]  # List of CSV files in the directory
@@ -54,19 +54,18 @@ def butter_lowpass_filter(data, cutoffVal, fs, order):
 
 # Process each file in the entries list
 for entry in entries:
-    #entry = entries[1]
+   #entry = entries[3]
     if entry.split(' ')[0].split('_')[-1] == 'Channels':
         # Read the CSV file
         dat = pd.read_csv(fPath + entry, sep=';', header=0, skiprows=[1])
-        
         dat.Force = dat.Force * 1000  # Convert force to correct units
 
         normal_cutoff = cutoff / nyq
         b, a = butter(order, normal_cutoff, btype='low', analog=False)
 
         # Extract force and displacement data
-        ForceDat = dat.Force 
-        DispDat = dat.Displacement 
+        ForceDat = dat.Force *-1
+        DispDat = dat.Displacement * -1
         ForceDisp = ForceDat / DispDat
 
         # Apply low-pass filter to the data
@@ -77,7 +76,7 @@ for entry in entries:
         # Identify local minima in the force data
         locs, _ = sig.find_peaks(-1 * FilteredForceDat, distance=200)
         pks = np.array(FilteredForceDat[locs])
-        adaptiveThresh = pks[np.where((pks > 8) & (pks < 14))].mean()
+        adaptiveThresh = pks[np.where((pks > -5) & (pks < 50))].mean()
         padding = 0.8
         FilteredForceDat[FilteredForceDat < adaptiveThresh + padding] = adaptiveThresh
 
@@ -101,7 +100,7 @@ for entry in entries:
             try:
                 if stops[0] < minima[0]:
                     stops.pop(0)
-                if minima[-1] > stops[-1]:
+                if stops[-1] > minima[-1]:
                     minima.pop(-1)
             except Exception as e:
                 print(e)
@@ -110,7 +109,7 @@ for entry in entries:
 
             if check_data == 1:
                 fig, ax = plt.subplots(1, 1)
-                for i, val in enumerate(minima):
+                for i, val in enumerate(minima[0:-1]):
                     try:
                         if i == len(minima) - 1:
                             ax.text(1.5, 35, 'Up', fontsize=12, color='blue')
@@ -127,7 +126,6 @@ for entry in entries:
                         answer = False
                         badFileList.append(entry)
                 answer = messagebox.askyesno("Question", "Is data clean?")
-
                 if answer == False:
                     plt.close('all')
                     print('Adding file to bad file list')
@@ -143,50 +141,39 @@ for entry in entries:
             PercentReturn = []
             Stiffness = []
             stiff = []
+            Specimen = []
 
-            # Filter cycles between 100 and 175
-            filtered_minima = minima[100:176]  # Ensure inclusivity
-            filtered_stops = stops[100:176]
-            
-            # Check for mismatched start-stop lists after filtering
-            if len(filtered_minima) != len(filtered_stops):
-                print("Warning: Mismatched filtered minima and stops lengths.")
-            
-            # Iterate over the filtered cycles for calculations
-            for i, val in enumerate(filtered_minima):
+            for i, val in enumerate(minima[0:-1]):
                 try:
-                    tmpForce = FilteredForceDat[filtered_minima[i]:filtered_stops[i]]
-                    tmpDispDat = filteredDatDisp[filtered_minima[i]:filtered_stops[i]]
-                    tmpFDDat = FilteredForceDispDat[filtered_minima[i]:filtered_stops[i]]
-            
+                    tmpForce = FilteredForceDat[minima[i]:stops[i]]
+                    tmpDispDat = filteredDatDisp[minima[i]:stops[i]]
+                    tmpFDDat = FilteredForceDispDat[minima[i]:stops[i]]
+
                     tmpMax = np.argmax(tmpForce)
                     tmpMaxFP = np.argmax(tmpDispDat)
                     tmp20 = round(0.2 * tmpMaxFP)
                     tmp40 = round(0.4 * tmpMaxFP)
                     tmp60 = round(0.6 * tmpMaxFP)
-            
+
                     tmpForceRange = tmpForce[tmp20:tmp60]
                     tmpDispRange = tmpDispDat[tmp20:tmp60]
-            
+
                     stiff = np.gradient(tmpForceRange, tmpDispRange)
-            
+
                     rampup = np.trapz(tmpForce[0:tmpMax], tmpDispDat[0:tmpMax])
                     rampdown = -1 * np.trapz(tmpForce[tmpMax:-1], tmpDispDat[tmpMax:-1])
-            
+
                     EnergyLoss = rampup - rampdown
                     PercentReturn.append((1 - (EnergyLoss / rampup)) * 100)
-                    Stiffness.append((tmpForce[tmp40] - tmpForce[tmp20]) / (tmpDispDat[tmp40] - tmpDispDat[tmp20]))
-            
+                    Stiffness.append(np.mean(stiff))
+                    Specimen.append(int(entry.split('_')[1]))
                 except Exception as e:
                     print(e)
 
+           # arrayValues = [[Specimen, PercentReturn, stiff]]
+            #col_vals = ['SpecimenNumber', 'PercentReturn', 'Stiffness']
 
-            arrayValues = [[int(entry.split('_')[1]), np.mean(PercentReturn), np.mean(stiff)]]
-            col_vals = ['SpecimenNumber', 'PercentReturn', 'Stiffness']
-
-            outcomes = pd.DataFrame(
-                data=arrayValues,
-                columns=col_vals)
+            outcomes = pd.DataFrame({'Specimen Number':list(Specimen), 'Percent Return': list(PercentReturn), 'Stiffness':list(Stiffness)})
 
             if save_on == 1:
                 if not os.path.exists(outfilePath):
