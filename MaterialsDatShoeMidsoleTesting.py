@@ -30,7 +30,7 @@ outfileName += '.csv'
 
 # Path to the directory containing the CSV files
 
-fPath = 'C:\\Users\\\Kate.Harrison\\Boa Technology Inc\\PFL Team - General\\Materials Testing\\alphaflyspeedlandtesting\\'
+fPath = 'C:\\Users\\adam.luftglass\\OneDrive - BOA Technology Inc\\General\\Materials Testing\\alphaflyspeedlandtesting\\'
 
 outfilePath = os.path.join(fPath, outfileName)  # Combine path and file name
 fileExt = r".csv"  # File extension of the target files
@@ -57,7 +57,7 @@ def butter_lowpass_filter(data, cutoffVal, fs, order):
 # Process each file in the entries list
 for entry in entries:
 
-   #entry = entries[1]
+   #entry = entries[3]
 
     if entry.split(' ')[0].split('_')[-1] == 'Channels':
         # Read the CSV file
@@ -65,7 +65,6 @@ for entry in entries:
         dat.Force = dat.Force * 1000  # Convert force to correct units
 
 
-        
 
         # Extract force and displacement data
         ForceDat = dat.Force *-1
@@ -80,6 +79,7 @@ for entry in entries:
         FilteredForceDispDat = FilteredForceDat / filteredDatDisp
 
         # Identify local minima in the force data
+
 
         locs_min, _ = sig.find_peaks(-1 * FilteredForceDat, distance=2500, prominence = 1500)
         pks_min = np.array(FilteredForceDat[locs_min])
