@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue May  6 11:14:51 2025
+
+@author: Adam.Luftglass
+"""
+
 
 
 # -*- coding: utf-8 -*-
@@ -29,7 +36,7 @@ if not outfileName:
 outfileName += '.csv'
 
 # Path to the directory containing the CSV files
-fPath = 'C:\\Users\\adam.luftglass\\OneDrive - BOA Technology Inc\\General\\Materials Testing\\Swatch Creation\\DisplacementControlledStretchTest\\'
+fPath = 'C:\\Users\\adam.luftglass\\OneDrive - BOA Technology Inc\\General\\Materials Testing\\Swatch Creation\\652025Adi\\'
 outfilePath = os.path.join(fPath, outfileName)  # Combine path and file name
 fileExt = r".csv"  # File extension of the target files
 entries = [fName for fName in os.listdir(fPath) if fName.endswith(fileExt)]  # List of CSV files in the directory
@@ -74,21 +81,21 @@ for entry in entries:
         filteredDatDisp = butter_lowpass_filter(DispDat, cutoff, fr, 2)
         FilteredForceDispDat = FilteredForceDat / filteredDatDisp
 
-        # Identify local minima in the force data
-        locs, _ = sig.find_peaks(-1 * FilteredForceDat, distance=200)
-        pks = np.array(FilteredForceDat[locs])
-        adaptiveThresh = pks[np.where((pks > 8) & (pks < 14))].mean()
+        # Identify local minima in the displacement data
+        locs, _ = sig.find_peaks(filteredDatDisp, distance=200)
+        pks = np.array(filteredDatDisp[locs])
+        adaptiveThresh = pks[np.where((pks > 1) & (pks < 2.5))].mean()
         padding = 0.8
-        FilteredForceDat[FilteredForceDat < adaptiveThresh + padding] = adaptiveThresh
+        filteredDatDisp[filteredDatDisp < adaptiveThresh + padding] = adaptiveThresh
 
         minima = []
         stops = []
-        for i, val in enumerate(FilteredForceDat):
-            if i == (len(FilteredForceDat) - 1):
+        for i, val in enumerate(filteredDatDisp):
+            if i == (len(filteredDatDisp) - 1):
                 pass
-            elif (val == adaptiveThresh) & (FilteredForceDat[i + 1] > adaptiveThresh):
+            elif (val == adaptiveThresh) & (filteredDatDisp[i + 1] > adaptiveThresh):
                 minima.append(i)
-            elif (val == adaptiveThresh) & (FilteredForceDat[i - 1] > adaptiveThresh):
+            elif (val == adaptiveThresh) & (filteredDatDisp[i - 1] > adaptiveThresh):
                 stops.append(i)
 
         if len(minima) == 0:

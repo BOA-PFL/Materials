@@ -24,7 +24,7 @@ from matplotlib import pyplot as plt  # For plotting data
 from scipy.signal import butter, filtfilt  # For signal processing
 
 # Path to the directory containing the CSV files
-fPath = 'C:\\Users\\adam.luftglass\\OneDrive - Boa Technology Inc\\General\\Materials Testing\\Fabric Stiffness\\117\\'
+fPath = 'C:\\Users\\adam.luftglass\\OneDrive - Boa Technology Inc\\General\\Materials Testing\\Fabric Stiffness\\TryRepeatTest\\'
 fileExt = r".csv"  # File extension of the target files
 entries = [fName for fName in os.listdir(fPath) if fName.endswith(fileExt)]  # List of CSV files in the directory
 
