@@ -29,7 +29,9 @@ if not outfileName:
 outfileName += '.csv'
 
 # Path to the directory containing the CSV files
+
 fPath = 'C:\\Users\\adam.luftglass\\OneDrive - BOA Technology Inc\\General\\Materials Testing\\alphaflyspeedlandtesting\\'
+
 outfilePath = os.path.join(fPath, outfileName)  # Combine path and file name
 fileExt = r".csv"  # File extension of the target files
 entries = [fName for fName in os.listdir(fPath) if fName.endswith(fileExt)]  # List of CSV files in the directory
@@ -54,19 +56,22 @@ def butter_lowpass_filter(data, cutoffVal, fs, order):
 
 # Process each file in the entries list
 for entry in entries:
+
    #entry = entries[3]
+
     if entry.split(' ')[0].split('_')[-1] == 'Channels':
         # Read the CSV file
         dat = pd.read_csv(fPath + entry, sep=';', header=0, skiprows=[1])
         dat.Force = dat.Force * 1000  # Convert force to correct units
 
-        normal_cutoff = cutoff / nyq
-        b, a = butter(order, normal_cutoff, btype='low', analog=False)
+
 
         # Extract force and displacement data
         ForceDat = dat.Force *-1
         DispDat = dat.Displacement * -1
+
         ForceDisp = ForceDat / DispDat
+
 
         # Apply low-pass filter to the data
         FilteredForceDat = butter_lowpass_filter(ForceDat, cutoff, fr, 2)
@@ -74,110 +79,85 @@ for entry in entries:
         FilteredForceDispDat = FilteredForceDat / filteredDatDisp
 
         # Identify local minima in the force data
-        locs, _ = sig.find_peaks(-1 * FilteredForceDat, distance=200)
-        pks = np.array(FilteredForceDat[locs])
-        adaptiveThresh = pks[np.where((pks > -5) & (pks < 50))].mean()
-        padding = 0.8
-        FilteredForceDat[FilteredForceDat < adaptiveThresh + padding] = adaptiveThresh
 
-        minima = []
-        stops = []
-        for i, val in enumerate(FilteredForceDat):
-            if i == (len(FilteredForceDat) - 1):
-                pass
-            elif (val == adaptiveThresh) & (FilteredForceDat[i + 1] > adaptiveThresh):
-                minima.append(i)
-            elif (val == adaptiveThresh) & (FilteredForceDat[i - 1] > adaptiveThresh):
-                stops.append(i)
 
-        if len(minima) == 0:
-            print('No minima detected, adding to badFileList; check file ' + entry)
+        locs_min, _ = sig.find_peaks(-1 * FilteredForceDat, distance=2500, prominence = 1500)
+        pks_min = np.array(FilteredForceDat[locs_min])
+        
+        
+        
+        
+        locs_max,_ = sig.find_peaks(FilteredForceDat, distance=2500, prominence = 1500)
+        pks_max = np.array(FilteredForceDat[locs_max])
+        
+      
+        
+        
+        if locs_max[0] < locs_min[0]:
+            locs_max = locs_max[1:]
+        if locs_max[-1] < locs_min[-1]:
+            locs_min = locs_min[:-1]
+            
+          
+                  
+        answer = True
+        if check_data == 1:
+             
+             plt.figure()
+             plt.plot(FilteredForceDat)
+             plt.plot(locs_min, FilteredForceDat[locs_min], 'x')
+             plt.plot(locs_max, FilteredForceDat[locs_max], 'x')
+             
+             answer = messagebox.askyesno("Question", "Is data clean?")
+             
+        if answer == False:
+            plt.close('all')
+            print('Adding file to bad file list')
             badFileList.append(entry)
-        else:
-            n = 20
-            #del minima[:n]
-            #del stops[:n]
-            try:
-                if stops[0] < minima[0]:
-                    stops.pop(0)
-                if stops[-1] > minima[-1]:
-                    minima.pop(-1)
-            except Exception as e:
-                print(e)
-                answer = False
-                badFileList.append(entry)
-
-            if check_data == 1:
-                fig, ax = plt.subplots(1, 1)
-                for i, val in enumerate(minima[0:-1]):
-                    try:
-                        if i == len(minima) - 1:
-                            ax.text(1.5, 35, 'Up', fontsize=12, color='blue')
-                            ax.text(1.5, 30, 'Down', fontsize=12, color='orange')
-                        else:
-                            start = minima[i]
-                            mid = minima[i] + round((stops[i] - minima[i]) / 2)
-                            end = stops[i]
-
-                            ax.plot(filteredDatDisp[start:mid], FilteredForceDat[start:mid], color='blue', label='up')
-                            ax.plot(filteredDatDisp[mid:end], FilteredForceDat[mid:end], color='orange', label='down')
-                    except Exception as e:
-                        print(e)
-                        answer = False
-                        badFileList.append(entry)
-                answer = messagebox.askyesno("Question", "Is data clean?")
-                if answer == False:
-                    plt.close('all')
-                    print('Adding file to bad file list')
-                    badFileList.append(entry)
-
-                if answer == True:
-                    plt.close('all')
-                    print('Calculating Stiffness and Energy Return')
-            else:
-                answer = True
-
-            EnergyLoss = []
+        
+        if answer == True:
+            plt.close('all')
+            print('Calculating Stiffness and Energy Return')
+         
             PercentReturn = []
             Stiffness = []
-            stiff = []
             Specimen = []
-
-            for i, val in enumerate(minima[0:-1]):
-                try:
-                    tmpForce = FilteredForceDat[minima[i]:stops[i]]
-                    tmpDispDat = filteredDatDisp[minima[i]:stops[i]]
-                    tmpFDDat = FilteredForceDispDat[minima[i]:stops[i]]
-
-                    tmpMax = np.argmax(tmpForce)
-                    tmpMaxFP = np.argmax(tmpDispDat)
-                    tmp20 = round(0.2 * tmpMaxFP)
-                    tmp40 = round(0.4 * tmpMaxFP)
-                    tmp60 = round(0.6 * tmpMaxFP)
-
-                    tmpForceRange = tmpForce[tmp20:tmp60]
-                    tmpDispRange = tmpDispDat[tmp20:tmp60]
-
-                    stiff = np.gradient(tmpForceRange, tmpDispRange)
-
-                    rampup = np.trapz(tmpForce[0:tmpMax], tmpDispDat[0:tmpMax])
-                    rampdown = -1 * np.trapz(tmpForce[tmpMax:-1], tmpDispDat[tmpMax:-1])
-
-                    EnergyLoss = rampup - rampdown
-                    PercentReturn.append((1 - (EnergyLoss / rampup)) * 100)
-                    Stiffness.append(np.mean(stiff))
-                    Specimen.append(int(entry.split('_')[1]))
-                except Exception as e:
-                    print(e)
-
-           # arrayValues = [[Specimen, PercentReturn, stiff]]
-            #col_vals = ['SpecimenNumber', 'PercentReturn', 'Stiffness']
-
+            
+            for i, val in enumerate(locs_min[:-1]):
+                 try:
+                     
+                     #i = 0
+                     tmpForce = FilteredForceDat[locs_min[i]:locs_max[i]]
+                     tmpDispDat = filteredDatDisp[locs_min[i]:locs_max[i]]
+                     tmpFDDat = FilteredForceDispDat[locs_min[i]:locs_max[i]]
+            
+                     tmpMax = np.argmax(tmpForce)
+                     tmpMaxFP = np.argmax(tmpDispDat)
+                     tmp20 = round(0.2 * tmpMaxFP)
+                     tmp40 = round(0.4 * tmpMaxFP)
+                     tmp60 = round(0.6 * tmpMaxFP)
+            
+                     tmpForceRange = tmpForce[tmp20:tmp60]
+                     tmpDispRange = tmpDispDat[tmp20:tmp60]
+            
+                     stiff = np.gradient(tmpForceRange, tmpDispRange)
+            
+                     rampup = np.trapz(tmpForce, tmpDispDat)
+                     rampdown = -1 * np.trapz(FilteredForceDat[locs_max[i]:locs_min[i+1]], filteredDatDisp[locs_max[i]:locs_min[i+1]])
+            
+                     EnergyLoss = rampup - rampdown
+                     PercentReturn.append((1 - (EnergyLoss / rampup)) * 100)
+                     Stiffness.append(np.mean(stiff))
+                     Specimen.append(int(entry.split('_')[1]))
+                 except Exception as e:
+                     print(e)
+            
+           
             outcomes = pd.DataFrame({'Specimen Number':list(Specimen), 'Percent Return': list(PercentReturn), 'Stiffness':list(Stiffness)})
-
+            
             if save_on == 1:
-                if not os.path.exists(outfilePath):
-                    outcomes.to_csv(outfilePath, mode='a', header=True, index=False)
-                else:
-                    outcomes.to_csv(outfilePath, mode='a', header=False, index=False)
-
+                 if not os.path.exists(outfilePath):
+                     outcomes.to_csv(outfilePath, mode='a', header=True, index=False)
+                 else:
+                     outcomes.to_csv(outfilePath, mode='a', header=False, index=False)
+            
